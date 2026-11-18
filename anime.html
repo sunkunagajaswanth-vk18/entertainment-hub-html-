@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anime - Explore Entertainment</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --background: #08090d;
+    --card: #151820;
+    --border: #292e3a;
+    --text: #ffffff;
+    --muted: #a3a8b5;
+    --accent: #ff5733;
+}
+body {
+    font-family: Arial, sans-serif;
+    background: var(--background);
+    color: var(--text);
+    min-height: 100vh;
+}
+.container { width: 92%; max-width: 1400px; margin: auto; }
+.image-library { display: none; }
+.page { min-height: 100vh; padding: 35px 0 70px; }
+.back-btn {
+    padding: 12px 20px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; color: white; cursor: pointer; margin-bottom: 30px; text-decoration: none; display: inline-block;
+}
+.back-btn:hover { border-color: var(--accent); }
+.page-title { font-size: clamp(30px, 4vw, 45px); text-align: center; margin-bottom: 12px; }
+.page-subtitle { color: var(--muted); text-align: center; margin-bottom: 30px; }
+
+/* 3 items in row 1, 2 items in row 2 */
+.category-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 20px; 
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.category-card {
+    min-height: 130px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 18px; color: white; font-size: 20px; font-weight: bold; cursor: pointer; transition: .3s;
+}
+.category-card:hover { border-color: var(--accent); transform: translateY(-5px); }
+
+.content-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 30px; }
+.category-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.filter-btn { padding: 11px 20px; background: #20242d; color: white; border: 1px solid #303642; border-radius: 25px; cursor: pointer; }
+.filter-btn:hover { border-color: var(--accent); }
+.filter-btn.active { background: var(--accent); border-color: var(--accent); }
+.search-box { width: 300px; flex-shrink: 0; }
+.search-box input { width: 100%; padding: 13px 18px; background: #151820; border: 1px solid #303642; border-radius: 25px; outline: none; color: white; }
+
+/* 3 Anime per row */
+.content-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+
+.content-card { overflow: hidden; background: var(--card); border: 1px solid var(--border); border-radius: 18px; transition: .3s; cursor: pointer; }
+.content-card:hover { transform: translateY(-6px); border-color: var(--accent); }
+.poster { width: 100%; height: 320px; overflow: hidden; background: #202b40; }
+.poster img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s ease; }
+.content-card:hover .poster img { transform: scale(1.05); }
+.details { padding: 20px; }
+.title { font-size: 22px; margin-bottom: 10px; }
+.rating { margin-bottom: 12px; font-size: 14px; }
+.stars { color: #ffc107; letter-spacing: 2px; margin-right: 6px; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.tag { background: #252b36; padding: 6px 12px; border-radius: 20px; font-size: 12px; }
+.languages { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.click-hint { margin-top: 12px; font-size: 13px; color: var(--accent); font-weight: bold; }
+.no-results { display: none; text-align: center; color: var(--muted); padding: 60px 20px; }
+
+/* Modal Styles */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.modal-overlay.active { display: flex; }
+.modal-box { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 900px; width: 100%; overflow: hidden; position: relative; display: grid; grid-template-columns: 320px 1fr; }
+.modal-close { position: absolute; top: 16px; right: 16px; width: 38px; height: 38px; border-radius: 50%; background: #20242d; border: 1px solid #303642; color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+.modal-close:hover { background: var(--accent); border-color: var(--accent); }
+.modal-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.modal-info { padding: 32px; display: flex; flex-direction: column; gap: 16px; }
+.modal-title { font-size: 28px; color: var(--text); padding-right: 30px; }
+.modal-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.modal-summary { color: #d1d5db; font-size: 15px; line-height: 1.65; background: #10131a; padding: 15px; border-radius: 12px; border: 1px solid #232733; }
+.modal-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.meta-item { background: #1b1f29; padding: 12px 15px; border-radius: 12px; border: 1px solid #292e3a; }
+.meta-item.full-width { grid-column: 1 / -1; }
+.meta-label { font-size: 12px; text-transform: uppercase; color: var(--accent); font-weight: bold; margin-bottom: 5px; }
+.meta-value { font-size: 15px; color: #ffffff; }
+.stream-badge { display: inline-block; background: rgba(255, 87, 51, 0.15); border: 1px solid var(--accent); color: #ff856b; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-right: 8px; margin-top: 4px; }
+
+@media(max-width: 1024px) {
+    .content-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width: 768px) {
+    .category-grid { grid-template-columns: repeat(2, 1fr); }
+    .content-toolbar { flex-direction: column; align-items: stretch; }
+    .search-box { width: 100%; }
+    .modal-box { grid-template-columns: 1fr; max-height: 90vh; overflow-y: auto; }
+    .modal-poster { height: 260px; }
+}
+@media(max-width: 500px) {
+    .category-grid, .content-grid { grid-template-columns: 1fr; }
+    .modal-meta-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="image-library">
+    <!-- ACTION ANIME -->
+    <img src="One-Piece.webp" data-title="One Piece" alt="One Piece">
+    <img src="naruto.jpg" data-title="Naruto" alt="Naruto">
+    <img src="Bleach.jpg" data-title="Bleach" alt="Bleach">
+    <img src="solo leveling.jpg" data-title="Solo Leveling" alt="Solo Leveling">
+    <img src="dragon ball.jpg" data-title="Dragon Ball Z" alt="Dragon Ball Z">
+    <img src="my hero.jpg" data-title="My Hero Academia" alt="My Hero Academia">
+    <img src="Black clover.webp" data-title="Black Clover" alt="Black Clover">
+    <img src="one punch man.jpg" data-title="One Punch Man" alt="One Punch Man">
+
+    <!-- HORROR ANIME -->
+    <img src="demon slayer.jpg" data-title="Demon Slayer" alt="Demon Slayer">
+    <img src="jujutsu kaisen.jpg" data-title="Jujutsu Kaisen" alt="Jujutsu Kaisen">
+    <img src="attack on titan  .jpg" data-title="Attack on Titan" alt="Attack on Titan">
+    <img src="another.jpg" data-title="Another" alt="Another">
+    <img src="Parasyte.jpg" data-title="Parasyte" alt="Parasyte">
+    <img src="Higurashi.jpg" data-title="Higurashi: When They Cry" alt="Higurashi: When They Cry">
+    <img src="The Promised Neverland.jpg" data-title="The Promised Neverland" alt="The Promised Neverland">
+    <img src="Shiki.jpg" data-title="Shiki" alt="Shiki">
+
+    <!-- ROMANCE ANIME -->
+    <img src="Kaguya-sama.jpg" data-title="Kaguya-sama: Love Is War" alt="Kaguya-sama: Love Is War">
+    <img src="Your Lie in April.jpg" data-title="Your Lie in April" alt="Your Lie in April">
+    <img src="Horimiya.jpg" data-title="Horimiya" alt="Horimiya">
+    <img src="kimi ni todoke.jpg" data-title="Kimi ni Todoke" alt="Kimi ni Todoke">
+    <img src="Fruits Basket.jpg" data-title="Fruits Basket" alt="Fruits Basket">
+    <img src="my dress up darling.jpg" data-title="My Dress-Up Darling" alt="My Dress-Up Darling">
+    <img src="The Dangers in My Heart.jpg" data-title="The Dangers in My Heart" alt="The Dangers in My Heart">
+    <img src="clannad.jpg" data-title="Clannad" alt="Clannad">
+
+    <!-- THRILLER ANIME -->
+    <img src="death note.jpg" data-title="Death Note" alt="Death Note">
+    <img src="steins gate.jpg" data-title="Steins;Gate" alt="Steins;Gate">
+    <img src="Psycho-Pass.jpg" data-title="Psycho-Pass" alt="Psycho-Pass">
+    <img src="86 Eighty-Six.jpg" data-title="86 Eighty-Six" alt="86 Eighty-Six">
+    <img src="Cyberpunk.jpg" data-title="Cyberpunk: Edgerunners" alt="Cyberpunk: Edgerunners">
+    <img src="Code Geass.jpg" data-title="Code Geass" alt="Code Geass">
+    <img src="Monster.jpg" data-title="Monster" alt="Monster">
+    <img src="Erased.jpg" data-title="Erased" alt="Erased">
+
+    <!-- DEFAULT POSTER -->
+    <img src="default.jpg" data-title="default" alt="Default">
+</div>
+
+<div class="container">
+    <!-- Category Selection View -->
+    <section id="categoryPage" class="page">
+        <a href="index.html" class="back-btn">← Back to Home</a>
+        <h1 class="page-title">Anime Categories</h1>
+        <p class="page-subtitle">Choose a category</p>
+        <div class="category-grid" id="categoryGrid"></div>
+    </section>
+
+    <!-- Content Grid View -->
+    <section id="contentPage" class="page" style="display: none;">
+        <button class="back-btn" onclick="goCategories()">← Back to Categories</button>
+        <h1 class="page-title" id="contentTitle">Anime</h1>
+        <p class="page-subtitle">Click on any card to view full details, characters & streaming platforms</p>
+
+        <div class="content-toolbar">
+            <div class="category-buttons" id="categoryButtons"></div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search anime..." oninput="searchContent()">
+            </div>
+        </div>
+
+        <div class="content-grid" id="contentGrid"></div>
+        <div class="no-results" id="noResults">No anime found.</div>
+    </section>
+</div>
+
+<!-- Modal Popup -->
+<div class="modal-overlay" id="detailModal" onclick="closeModalOnOutside(event)">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div class="modal-poster"><img id="modalPosterImg" src="" alt="Poster"></div>
+        <div class="modal-info">
+            <h2 class="modal-title" id="modalTitle"></h2>
+            <div class="modal-tags" id="modalTags"></div>
+            <div class="modal-summary" id="modalSummary"></div>
+            <div class="modal-meta-grid">
+                <div class="meta-item"><div class="meta-label">Main Protagonist</div><div class="meta-value" id="modalHero"></div></div>
+                <div class="meta-item"><div class="meta-label">Creator / Studio</div><div class="meta-value" id="modalDirector"></div></div>
+                <div class="meta-item full-width"><div class="meta-label">Main Characters</div><div class="meta-value" id="modalCharacters"></div></div>
+                <div class="meta-item full-width"><div class="meta-label">Streaming Platforms</div><div class="meta-value" id="modalStreams"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const categories = ["Action", "Horror", "Romance", "Thriller"];
+
+const animeTitles = {
+    // 8 Action Anime
+    "One Piece": ["Action"],
+    "Naruto": ["Action"],
+    "Bleach": ["Action"],
+    "Solo Leveling": ["Action"],
+    "Dragon Ball Z": ["Action"],
+    "My Hero Academia": ["Action"],
+    "Black Clover": ["Action"],
+    "One Punch Man": ["Action"],
+
+    // 8 Horror Anime
+    "Demon Slayer": ["Horror", "Action"],
+    "Jujutsu Kaisen": ["Horror", "Action"],
+    "Attack on Titan": ["Horror", "Action"],
+    "Another": ["Horror", "Thriller"],
+    "Parasyte": ["Horror", "Action"],
+    "Higurashi: When They Cry": ["Horror", "Thriller"],
+    "The Promised Neverland": ["Horror", "Thriller"],
+    "Shiki": ["Horror", "Thriller"],
+
+    // 8 Romance Anime
+    "Kaguya-sama: Love Is War": ["Romance", "Comedy"],
+    "Your Lie in April": ["Romance", "Emotions"],
+    "Horimiya": ["Romance", "Comedy"],
+    "Kimi ni Todoke": ["Romance", "Emotions"],
+    "Fruits Basket": ["Romance", "Emotions"],
+    "My Dress-Up Darling": ["Romance", "Comedy"],
+    "The Dangers in My Heart": ["Romance", "Comedy"],
+    "Clannad": ["Romance", "Emotions"],
+
+    // 8 Thriller Anime
+    "Death Note": ["Thriller", "Horror"],
+    "Steins;Gate": ["Thriller", "Science Fiction"],
+    "Psycho-Pass": ["Thriller", "Science Fiction"],
+    "86 Eighty-Six": ["Thriller", "Action"],
+    "Cyberpunk: Edgerunners": ["Thriller", "Action"],
+    "Code Geass": ["Thriller", "Action"],
+    "Monster": ["Thriller"],
+    "Erased": ["Thriller", "Science Fiction"]
+};
+
+const contentDetailsDB = {
+    "One Piece": { summary: "Monkey D. Luffy sets off on an adventure with his pirate crew in hopes of finding the greatest treasure, the One Piece.", hero: "Monkey D. Luffy", director: "Eiichiro Oda / Toei Animation", characters: "Luffy, Zoro, Nami, Sanji, Usopp", streams: ["Crunchyroll", "Netflix"] },
+    "Naruto": { summary: "Naruto Uzumaki strives for recognition and dreams of becoming the Hokage, the village's leader and strongest ninja.", hero: "Naruto Uzumaki", director: "Masashi Kishimoto / Pierrot", characters: "Naruto, Sasuke, Sakura, Kakashi, Itachi", streams: ["Crunchyroll", "Netflix"] },
+    "Bleach": { summary: "High school student Ichigo Kurosaki gains soul reaper powers and sets out to save the living world from evil Hollows.", hero: "Ichigo Kurosaki", director: "Tite Kubo / Studio Pierrot", characters: "Ichigo, Rukia, Orihime, Uryu, Aizen", streams: ["Crunchyroll", "Disney+ Hotstar"] },
+    "Solo Leveling": { summary: "Weak hunter Sung Jinwoo gains a mysterious system that allows him to level up without limits, becoming an unstoppable monarch.", hero: "Sung Jinwoo", director: "Shunsuke Nakashige / A-1 Pictures", characters: "Sung Jinwoo, Cha Hae-In, Yoo Jinho", streams: ["Crunchyroll", "Netflix"] },
+    "Dragon Ball Z": { summary: "Goku and his warrior allies defend the planet Earth against powerful extraterrestrial threats and androids.", hero: "Goku", director: "Akira Toriyama / Toei Animation", characters: "Goku, Vegeta, Gohan, Piccolo, Frieza", streams: ["Crunchyroll"] },
+    "My Hero Academia": { summary: "In a world where people with superpowers are common, a powerless boy enrolls in a prestigious hero academy.", hero: "Izuku Midoriya", director: "Kenji Nagasaki / Bones", characters: "Deku, Bakugo, Todoroki, All Might", streams: ["Crunchyroll", "Netflix"] },
+    "Black Clover": { summary: "Born without magic in a magic-bound world, Asta strives to become the Wizard King alongside his rival Yuno.", hero: "Asta", director: "Tatsuya Yoshihara / Studio Pierrot", characters: "Asta, Yuno, Noelle Silva, Yami Sukehiro", streams: ["Crunchyroll"] },
+    "One Punch Man": { summary: "Saitama is a hero who can defeat any opponent with a single punch, but he seeks a worthy challenger after growing bored of his immense power.", hero: "Saitama", director: "Shingo Natsume / Madhouse", characters: "Saitama, Genos, Tatsumaki, King", streams: ["Crunchyroll", "Netflix"] },
+
+    "Demon Slayer": { summary: "Tanjiro Kamado becomes a demon slayer to avenge his family and cure his sister Nezuko after she is turned into a demon.", hero: "Tanjiro Kamado", director: "Haruo Sotozaki / Ufotable", characters: "Tanjiro, Nezuko, Zenitsu, Inosuke, Muzan", streams: ["Crunchyroll", "Netflix"] },
+    "Jujutsu Kaisen": { summary: "Yuji Itadori swallows a cursed talisman—the finger of a demon—and joins secret sorcerers to exorcise powerful curses.", hero: "Yuji Itadori", director: "Sunghoo Park / MAPPA", characters: "Yuji, Satoru Gojo, Megumi, Nobara, Sukuna", streams: ["Crunchyroll", "Netflix"] },
+    "Attack on Titan": { summary: "Eren Yeager vows to destroy giant humanoid Titans that brought humanity to the brink of extinction after his hometown is destroyed.", hero: "Eren Yeager", director: "Tetsuro Araki / WIT / MAPPA", characters: "Eren, Mikasa, Armin, Levi, Erwin", streams: ["Crunchyroll", "Amazon Prime Video"] },
+    "Another": { summary: "A transfer student enters a middle school class cursed by a mysterious death from the past, leading to gruesome incidents.", hero: "Kou Sakakibara", director: "Tsutomu Mizushima / P.A. Works", characters: "Kou Sakakibara, Mei Misaki", streams: ["Crunchyroll"] },
+    "Parasyte": { summary: "Alien parasites invade Earth and take over human hosts, but high schooler Shinichi learns to coexist with one in his right hand.", hero: "Shinichi Izami", director: "Kenichi Shimizu / Madhouse", characters: "Shinichi Izami, Migi, Satomi Murano", streams: ["Crunchyroll", "Netflix"] },
+    "Higurashi: When They Cry": { summary: "A group of friends in a quiet rural village uncover dark and bloody mysteries surrounding local annual festivals.", hero: "Keiichi Maebara", director: "Chiaki Kon / Studio Deen", characters: "Keiichi, Rena, Mion, Satoko, Rika", streams: ["Crunchyroll"] },
+    "The Promised Neverland": { summary: "Brilliant orphans discover a dark, sinister secret about their orphanage farm and plan a dangerous escape for everyone.", hero: "Emma", director: "Mamoru Kanbe / CloverWorks", characters: "Emma, Norman, Ray, Isabella", streams: ["Crunchyroll", "Netflix"] },
+    "Shiki": { summary: "Strange deaths plague a small mountain village after a peculiar family moves into a haunted mansion, revealing a vampire outbreak.", hero: "Toshio Ozaki", director: "Tetsuro Amino / Daume", characters: "Toshio Ozaki, Natsuno Yuuki, Sunako Kirishiki", streams: ["Crunchyroll"] },
+
+    "Kaguya-sama: Love Is War": { summary: "Two elite student council officers are too proud to confess their love, engaging in a psychological war of wits to make the other confess first.", hero: "Miyuki Shirogane, Kaguya Shinomiya", director: "Mamoru Hatakeyama / A-1 Pictures", characters: "Kaguya Shinomiya, Miyuki Shirogane, Chika Fujiwara, Yu Ishigami", streams: ["Crunchyroll", "Netflix"] },
+    "Your Lie in April": { summary: "A piano prodigy who lost his ability to play after trauma meets an energetic violinist who helps him return to the music world.", hero: "Kousei Arima", director: "Kyhei Ishiguro / A-1 Pictures", characters: "Kousei Arima, Kaori Miyazono, Tsubaki Sawabe", streams: ["Crunchyroll", "Netflix"] },
+    "Horimiya": { summary: "An outgoing popular girl and a gloomy quiet boy discover each other's secret personas outside school and grow close.", hero: "Kyouko Hori, Izumi Miyamura", director: "Masashi Ishihama / CloverWorks", characters: "Kyouko Hori, Izumi Miyamura, Toru Ishikawa, Yuki Yoshikawa", streams: ["Crunchyroll"] },
+    "Kimi ni Todoke": { summary: "A sweet girl misunderstood because of her appearance makes friends and experiences romance for the first time.", hero: "Sawako Kuronuma", director: "Hiroshi Kaburagi / Production I.G", characters: "Sawako Kuronuma, Shota Kazehaya", streams: ["Crunchyroll", "Netflix"] },
+    "Fruits Basket": { summary: "An orphaned girl living with the mysterious Soma family discovers they are cursed to transform into zodiac animals when hugged by the opposite sex.", hero: "Tohru Honda", director: "Yoshihide Ibata / TMS Entertainment", characters: "Tohru Honda, Yuki Soma, Kyo Soma, Shigure Soma", streams: ["Crunchyroll", "Funimation"] },
+    "My Dress-Up Darling": { summary: "A shy dollmaker artisan and a popular cosplayer girl team up to create intricate costumes, sparking a heartwarming bond.", hero: "Wakana Gojo, Marin Kitagawa", director: "Keisuke Shinohara / CloverWorks", characters: "Wakana Gojo, Marin Kitagawa", streams: ["Crunchyroll"] },
+    "The Dangers in My Heart": { summary: "A gloomy edgy boy who fantasizes about dark thoughts finds himself completely captivated by the school's popular top idol girl.", hero: "Kyotaro Ichikawa", director: "Hiroaki Akagi / Shin-Ei Animation", characters: "Kyotaro Ichikawa, Anna Yamada", streams: ["HIDIVE", "Crunchyroll"] },
+    "Clannad": { summary: "A delinquent high school student meets a quirky girl who revives his interest in life as he helps her rebuild the school drama club.", hero: "Tomoya Okazaki", director: "Tatsuya Ishihara / Kyoto Animation", characters: "Tomoya Okazaki, Nagisa Furukawa, Kyou Fujibayashi, Kotomi Ichinose", streams: ["Crunchyroll"] },
+
+    "Death Note": { summary: "An intelligent high school student finds a supernatural notebook that kills anyone whose name is written in it, prompting a high-stakes cat-and-mouse game.", hero: "Light Yagami", director: "Tetsuro Araki / Madhouse", characters: "Light Yagami, L Lawliet, Ryuk, Misa Amane", streams: ["Netflix", "Crunchyroll"] },
+    "Steins;Gate": { summary: "A self-proclaimed mad scientist and his friends accidentally invent a microwave-based time machine, dragging them into a deadly conspiracy.", hero: "Rintaro Okabe", director: "Hiroshi Hamasaki / Takuya Sato / White Fox", characters: "Rintaro Okabe, Kurisu Makise, Mayuri Shiina, Itaru Hashida", streams: ["Crunchyroll"] },
+    "Psycho-Pass": { summary: "In a futuristic society where mental states are quantified to predict crimes, a rookie inspector uncovers deep flaws within the automated system.", hero: "Akane Tsunemori", director: "Naoyoshi Shiotani / Production I.G", characters: "Akane Tsunemori, Shinya Kogami, Shogo Makishima", streams: ["Crunchyroll", "Netflix"] },
+    "86 Eighty-Six": { summary: "A military officer guides an elite squadron of unmanned combat drones handled by ostracized humans fighting a brutal automated war.", hero: "Lena Milizé, Shinei Nouzen", director: "Toshimasa Ishii / CloverWorks", characters: "Vladilena Milizé, Shinei Nouzen, Raiden Shuga", streams: ["Crunchyroll"] },
+    "Cyberpunk: Edgerunners": { summary: "A street kid trying to survive in a technology-and-body-modification-obsessed city becomes an 'edgerunner' mercenary outlaw.", hero: "David Martinez", director: "Hiroyuki Imaishi / Studio Trigger", characters: "David Martinez, Lucy, Maine, Rebecca", streams: ["Netflix"] },
+    "Code Geass": { summary: "An exiled prince gains the absolute power of obedience called 'Geass' and leads a massive rebellion against the tyrannical Holy Britannian Empire.", hero: "Lelouch Lamperouge", director: "Goro Taniguchi / Sunrise", characters: "Lelouch Lamperouge, Suzaku Kururugi, C.C., Kallen Stadtfeld", streams: ["Crunchyroll", "Netflix"] },
+    "Monster": { summary: "A brilliant brain surgeon gives up his status to track down a former patient who turned out to be a charismatic and psychotic serial killer.", hero: "Dr. Kenzo Tenma", director: "Masayuki Kojima / Madhouse", characters: "Dr. Kenzo Tenma, Johan Liebert, Anna Liebert, Inspector Lunge", streams: ["Netflix"] },
+    "Erased": { summary: "A manga artist with the ability to prevent deaths travels 18 years back in time to stop a serial kidnapping case that claimed his classmates' lives.", hero: "Satoru Fujinuma", director: "Tomohiko Ito / A-1 Pictures", characters: "Satoru Fujinuma, Kayo Hinazuki, Kenya Kobayashi", streams: ["Crunchyroll", "Netflix"] }
+};
+
+function getDetailsForTitle(title) {
+    return contentDetailsDB[title] || {
+        summary: `${title} is a phenomenal and highly-rated anime series.`,
+        hero: "Main Protagonist",
+        director: "Studio / Creator",
+        characters: "Main Characters",
+        streams: ["Crunchyroll", "Netflix"]
+    };
+}
+
+function buildCategoryData(titleData) {
+    const res = {};
+    categories.forEach(c => res[c] = []);
+    Object.entries(titleData).forEach(([t, cs]) => {
+        cs.forEach(c => { if (res[c]) res[c].push(t); });
+    });
+    return res;
+}
+
+const data = buildCategoryData(animeTitles);
+let currentCategory = "All";
+
+function initCategories() {
+    const grid = document.getElementById("categoryGrid");
+    grid.innerHTML = "";
+    ["All Anime", ...categories].forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "category-card";
+        btn.innerText = cat;
+        btn.onclick = () => openCategory(cat === "All Anime" ? "All" : cat);
+        grid.appendChild(btn);
+    });
+}
+
+function openCategory(cat) {
+    currentCategory = cat;
+    document.getElementById("categoryPage").style.display = "none";
+    document.getElementById("contentPage").style.display = "block";
+    document.getElementById("contentTitle").innerText = cat === "All" ? "All Anime" : "Anime - " + cat;
+    document.getElementById("searchInput").value = "";
+    createCategoryButtons();
+    displayContent();
+    window.scrollTo(0, 0);
+}
+
+function goCategories() {
+    document.getElementById("contentPage").style.display = "none";
+    document.getElementById("categoryPage").style.display = "block";
+    window.scrollTo(0, 0);
+}
+
+function createCategoryButtons() {
+    const buttons = document.getElementById("categoryButtons");
+    buttons.innerHTML = "";
+    ["All", ...categories].forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "filter-btn " + (cat === currentCategory ? "active" : "");
+        btn.innerText = cat === "All" ? "All" : cat;
+        btn.onclick = () => {
+            currentCategory = cat;
+            document.getElementById("contentTitle").innerText = cat === "All" ? "All Anime" : "Anime - " + cat;
+            createCategoryButtons();
+            displayContent(document.getElementById("searchInput").value);
+        };
+        buttons.appendChild(btn);
+    });
+}
+
+function getImageFromBody(title) {
+    const imgs = document.querySelectorAll(".image-library img");
+    for (let img of imgs) {
+        if (img.dataset.title && img.dataset.title.toLowerCase() === title.toLowerCase()) return img.src;
+    }
+    return document.querySelector('.image-library img[data-title="default"]').src;
+}
+
+function displayContent(searchText = "") {
+    const grid = document.getElementById("contentGrid");
+    const noResults = document.getElementById("noResults");
+    grid.innerHTML = "";
+
+    let titles = [];
+    if (currentCategory === "All") {
+        titles = Object.keys(animeTitles);
+    } else {
+        titles = data[currentCategory] || [];
+    }
+
+    const filtered = titles.filter(t => t.toLowerCase().includes(searchText.toLowerCase()));
+    noResults.style.display = filtered.length === 0 ? "block" : "none";
+
+    filtered.forEach(title => {
+        const card = document.createElement("div");
+        card.className = "content-card";
+        const contentCats = animeTitles[title] || [];
+        card.onclick = () => openModal(title, contentCats);
+
+        const poster = document.createElement("div");
+        poster.className = "poster";
+        const img = document.createElement("img");
+        img.src = getImageFromBody(title);
+        img.alt = title;
+        img.onerror = function() {
+            this.onerror = null;
+            this.src = document.querySelector('.image-library img[data-title="default"]').src;
+        };
+        poster.appendChild(img);
+
+        const details = document.createElement("div");
+        details.className = "details";
+        details.innerHTML = `
+            <h2 class="title">${title}</h2>
+            <div class="rating"><span class="stars">★★★★★</span> Masterpiece</div>
+            <div class="tags">${contentCats.map(c => `<span class="tag">${c}</span>`).join("")}</div>
+            <div class="languages"><strong>Languages:</strong> Japanese, English, Hindi, Telugu</div>
+            <div class="click-hint">View Details & Streaming →</div>
+        `;
+        card.appendChild(poster);
+        card.appendChild(details);
+        grid.appendChild(card);
+    });
+}
+
+function searchContent() {
+    displayContent(document.getElementById("searchInput").value);
+}
+
+function openModal(title, cats) {
+    const info = getDetailsForTitle(title);
+    const posterImg = document.getElementById("modalPosterImg");
+    posterImg.src = getImageFromBody(title);
+    posterImg.onerror = function() {
+        this.onerror = null;
+        this.src = document.querySelector('.image-library img[data-title="default"]').src;
+    };
+
+    document.getElementById("modalTitle").innerText = title;
+    document.getElementById("modalTags").innerHTML = cats.map(c => `<span class="tag">${c}</span>`).join("");
+    document.getElementById("modalSummary").innerText = info.summary;
+    document.getElementById("modalHero").innerText = info.hero;
+    document.getElementById("modalDirector").innerText = info.director;
+    document.getElementById("modalCharacters").innerText = info.characters;
+    document.getElementById("modalStreams").innerHTML = info.streams.map(s => `<span class="stream-badge">${s}</span>`).join("");
+    document.getElementById("detailModal").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function closeModal() {
+    document.getElementById("detailModal").classList.remove("active");
+    document.body.style.overflow = "auto";
+}
+
+function closeModalOnOutside(e) {
+    if (e.target.id === "detailModal") closeModal();
+}
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") closeModal();
+});
+
+initCategories();
+</script>
+</body>
+</html>

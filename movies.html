@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movies - Explore Entertainment</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --background: #08090d;
+    --card: #151820;
+    --border: #292e3a;
+    --text: #ffffff;
+    --muted: #a3a8b5;
+    --accent: #ff5733;
+}
+body {
+    font-family: Arial, sans-serif;
+    background: var(--background);
+    color: var(--text);
+    min-height: 100vh;
+}
+.container { width: 92%; max-width: 1400px; margin: auto; }
+.image-library { display: none; }
+.page { min-height: 100vh; padding: 35px 0 70px; }
+.back-btn {
+    padding: 12px 20px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; color: white; cursor: pointer; margin-bottom: 30px; text-decoration: none; display: inline-block;
+}
+.back-btn:hover { border-color: var(--accent); }
+.page-title { font-size: clamp(30px, 4vw, 45px); text-align: center; margin-bottom: 12px; }
+.page-subtitle { color: var(--muted); text-align: center; margin-bottom: 30px; }
+
+/* 3 items in row 1, 2 items in row 2 */
+.category-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 20px; 
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.category-card {
+    min-height: 130px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 18px; color: white; font-size: 20px; font-weight: bold; cursor: pointer; transition: .3s;
+}
+.category-card:hover { border-color: var(--accent); transform: translateY(-5px); }
+
+.content-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 30px; }
+.category-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.filter-btn { padding: 11px 20px; background: #20242d; color: white; border: 1px solid #303642; border-radius: 25px; cursor: pointer; }
+.filter-btn:hover { border-color: var(--accent); }
+.filter-btn.active { background: var(--accent); border-color: var(--accent); }
+.search-box { width: 300px; flex-shrink: 0; }
+.search-box input { width: 100%; padding: 13px 18px; background: #151820; border: 1px solid #303642; border-radius: 25px; outline: none; color: white; }
+
+/* 3 Movies per row */
+.content-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+
+.content-card { overflow: hidden; background: var(--card); border: 1px solid var(--border); border-radius: 18px; transition: .3s; cursor: pointer; }
+.content-card:hover { transform: translateY(-6px); border-color: var(--accent); }
+.poster { width: 100%; height: 320px; overflow: hidden; background: #202b40; }
+.poster img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s ease; }
+.content-card:hover .poster img { transform: scale(1.05); }
+.details { padding: 20px; }
+.title { font-size: 22px; margin-bottom: 10px; }
+.rating { margin-bottom: 12px; font-size: 14px; }
+.stars { color: #ffc107; letter-spacing: 2px; margin-right: 6px; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.tag { background: #252b36; padding: 6px 12px; border-radius: 20px; font-size: 12px; }
+.languages { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.click-hint { margin-top: 12px; font-size: 13px; color: var(--accent); font-weight: bold; }
+.no-results { display: none; text-align: center; color: var(--muted); padding: 60px 20px; }
+
+/* Modal Styles */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.modal-overlay.active { display: flex; }
+.modal-box { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 900px; width: 100%; overflow: hidden; position: relative; display: grid; grid-template-columns: 320px 1fr; }
+.modal-close { position: absolute; top: 16px; right: 16px; width: 38px; height: 38px; border-radius: 50%; background: #20242d; border: 1px solid #303642; color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+.modal-close:hover { background: var(--accent); border-color: var(--accent); }
+.modal-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.modal-info { padding: 32px; display: flex; flex-direction: column; gap: 16px; }
+.modal-title { font-size: 28px; color: var(--text); padding-right: 30px; }
+.modal-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.modal-summary { color: #d1d5db; font-size: 15px; line-height: 1.65; background: #10131a; padding: 15px; border-radius: 12px; border: 1px solid #232733; }
+.modal-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.meta-item { background: #1b1f29; padding: 12px 15px; border-radius: 12px; border: 1px solid #292e3a; }
+.meta-item.full-width { grid-column: 1 / -1; }
+.meta-label { font-size: 12px; text-transform: uppercase; color: var(--accent); font-weight: bold; margin-bottom: 5px; }
+.meta-value { font-size: 15px; color: #ffffff; }
+.stream-badge { display: inline-block; background: rgba(255, 87, 51, 0.15); border: 1px solid var(--accent); color: #ff856b; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-right: 8px; margin-top: 4px; }
+
+@media(max-width: 1024px) {
+    .content-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width: 768px) {
+    .category-grid { grid-template-columns: repeat(2, 1fr); }
+    .content-toolbar { flex-direction: column; align-items: stretch; }
+    .search-box { width: 100%; }
+    .modal-box { grid-template-columns: 1fr; max-height: 90vh; overflow-y: auto; }
+    .modal-poster { height: 260px; }
+}
+@media(max-width: 500px) {
+    .category-grid, .content-grid { grid-template-columns: 1fr; }
+    .modal-meta-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="image-library">
+    <!-- ACTION POSTERS -->
+    <img src="rrr.jpg" data-title="RRR" alt="RRR">
+    <img src="Baahubali.jpg" data-title="Baahubali" alt="Baahubali">
+    <img src="Avengers.jpg" data-title="Avengers: Endgame" alt="Avengers: Endgame">
+    <img src="Salaar.jpg" data-title="Salaar" alt="Salaar">
+    <img src="Krish.jpg" data-title="Krish" alt="Krish">
+    <img src="War.jpg" data-title="War" alt="War">
+    <img src="Fast and Furious.jpg" data-title="Fast and Furious" alt="Fast and Furious">
+    <img src="Spirit.jpg" data-title="Spirit" alt="Spirit">
+
+    <!-- HORROR POSTERS -->
+    <img src="The Conjuring.jpg" data-title="The Conjuring" alt="The Conjuring">
+    <img src="Tumbbad.jpg" data-title="Tumbbad" alt="Tumbbad">
+    <img src="inception.jpg" data-title="Insidious" alt="Insidious">
+    <img src="A Quiet Place.jpg" data-title="A Quiet Place" alt="A Quiet Place">
+    <img src="IT.jpg" data-title="IT" alt="IT">
+    <img src="The Nun.jpg" data-title="The Nun" alt="The Nun">
+    <img src="Hereditary.jpg" data-title="Hereditary" alt="Hereditary">
+    <img src="Smile.jpg" data-title="Smile" alt="Smile">
+
+    <!-- ROMANCE POSTERS -->
+    <img src="Sita Ramam.jpg" data-title="Sita Ramam" alt="Sita Ramam">
+    <img src="96.jpg" data-title="96" alt="96">
+    <img src="Titanic.jpg" data-title="Titanic" alt="Titanic">
+    <img src="La La Land.jpg" data-title="La La Land" alt="La La Land">
+    <img src="The Notebook.jpg" data-title="The Notebook" alt="The Notebook">
+    <img src="Premam.jpg" data-title="Premam" alt="Premam">
+    <img src="Aashiqui 2.jpg" data-title="Aashiqui 2" alt="Aashiqui 2">
+    <img src="The Fault in Our Stars.jpg" data-title="The Fault in Our Stars" alt="The Fault in Our Stars">
+
+    <!-- THRILLER POSTERS -->
+    <img src="Drishyam.jpg" data-title="Drishyam" alt="Drishyam">
+    <img src="Andhadhun.jpg" data-title="Andhadhun" alt="Andhadhun">
+    <img src="Shutter Island.jpg" data-title="Shutter Island" alt="Shutter Island">
+    <img src="Se7en.jpg" data-title="Se7en" alt="Se7en">
+    <img src="Gone Girl.jpg" data-title="Gone Girl" alt="Gone Girl">
+    <img src="Prisoners.jpg" data-title="Prisoners" alt="Prisoners">
+    <img src="inception.jpg" data-title="Inception" alt="Inception">
+    <img src="Interstellar.jpg" data-title="Interstellar" alt="Interstellar">
+
+    <!-- DEFAULT POSTER -->
+    <img src="default.jpg" data-title="default" alt="Default">
+</div>
+
+<div class="container">
+    <!-- Category Selection View -->
+    <section id="categoryPage" class="page">
+        <a href="index.html" class="back-btn">← Back to Home</a>
+        <h1 class="page-title">Movies Categories</h1>
+        <p class="page-subtitle">Choose a category</p>
+        <div class="category-grid" id="categoryGrid"></div>
+    </section>
+
+    <!-- Content Grid View -->
+    <section id="contentPage" class="page" style="display: none;">
+        <button class="back-btn" onclick="goCategories()">← Back to Categories</button>
+        <h1 class="page-title" id="contentTitle">Movies</h1>
+        <p class="page-subtitle">Click on any card to view full details, cast & streaming platforms</p>
+
+        <div class="content-toolbar">
+            <div class="category-buttons" id="categoryButtons"></div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search movies..." oninput="searchContent()">
+            </div>
+        </div>
+
+        <div class="content-grid" id="contentGrid"></div>
+        <div class="no-results" id="noResults">No movies found.</div>
+    </section>
+</div>
+
+<!-- Modal Popup -->
+<div class="modal-overlay" id="detailModal" onclick="closeModalOnOutside(event)">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div class="modal-poster"><img id="modalPosterImg" src="" alt="Poster"></div>
+        <div class="modal-info">
+            <h2 class="modal-title" id="modalTitle"></h2>
+            <div class="modal-tags" id="modalTags"></div>
+            <div class="modal-summary" id="modalSummary"></div>
+            <div class="modal-meta-grid">
+                <div class="meta-item"><div class="meta-label">Hero / Lead</div><div class="meta-value" id="modalHero"></div></div>
+                <div class="meta-item"><div class="meta-label">Director</div><div class="meta-value" id="modalDirector"></div></div>
+                <div class="meta-item full-width"><div class="meta-label">Main Characters</div><div class="meta-value" id="modalCharacters"></div></div>
+                <div class="meta-item full-width"><div class="meta-label">Streaming Platforms</div><div class="meta-value" id="modalStreams"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const categories = ["Action", "Horror", "Romance", "Thriller"];
+
+const movieTitles = {
+    "RRR": ["Action"],
+    "Baahubali": ["Action"],
+    "Avengers: Endgame": ["Action"],
+    "Salaar": ["Action", "Thriller"],
+    "Krish": ["Action"],
+    "War": ["Action", "Thriller"],
+    "Fast and Furious": ["Action"],
+    "Spirit": ["Action", "Thriller"],
+
+    "The Conjuring": ["Horror"],
+    "Tumbbad": ["Horror", "Thriller"],
+    "Insidious": ["Horror"],
+    "A Quiet Place": ["Horror", "Thriller"],
+    "IT": ["Horror"],
+    "The Nun": ["Horror"],
+    "Hereditary": ["Horror"],
+    "Smile": ["Horror"],
+
+    "Sita Ramam": ["Romance"],
+    "96": ["Romance"],
+    "Titanic": ["Romance"],
+    "La La Land": ["Romance"],
+    "The Notebook": ["Romance"],
+    "Premam": ["Romance"],
+    "Aashiqui 2": ["Romance"],
+    "The Fault in Our Stars": ["Romance"],
+
+    "Drishyam": ["Thriller"],
+    "Andhadhun": ["Thriller"],
+    "Shutter Island": ["Thriller"],
+    "Se7en": ["Thriller"],
+    "Gone Girl": ["Thriller"],
+    "Prisoners": ["Thriller"],
+    "Inception": ["Thriller", "Action"],
+    "Interstellar": ["Thriller"]
+};
+
+const contentDetailsDB = {
+    "RRR": { summary: "A fearless revolutionary and a British officer join forces to fight against despotic colonial rulers in 1920s India.", hero: "N. T. Rama Rao Jr., Ram Charan", director: "S. S. Rajamouli", characters: "Komaram Bheem, Alluri Sitarama Raju, Sita, Scott Buxton", streams: ["Netflix", "ZEE5", "Disney+ Hotstar"] },
+    "Baahubali": { summary: "In the kingdom of Mahishmati, a young man raised by tribal villagers discovers his royal heritage and fights to reclaim his throne.", hero: "Prabhas", director: "S. S. Rajamouli", characters: "Amarendra Baahubali, Mahendra Baahubali, Bhallaladeva, Sivagami, Kattappa", streams: ["Netflix", "Disney+ Hotstar", "SonyLIV"] },
+    "Avengers: Endgame": { summary: "After Thanos wipes out half of all life, the surviving Avengers assemble one final time to reverse his actions and restore balance.", hero: "Robert Downey Jr., Chris Evans", director: "Anthony & Joe Russo", characters: "Iron Man, Captain America, Thor, Hulk, Black Widow, Thanos", streams: ["Disney+ Hotstar"] },
+    "Salaar": { summary: "In the violent dystopian city-state of Khansaar, a fierce warrior honors a solemn promise to his childhood best friend.", hero: "Prabhas", director: "Prashanth Neel", characters: "Deva (Salaar), Varadha Raja Mannar, Raja Mannar, Aadhya", streams: ["Netflix", "Disney+ Hotstar"] },
+    "Krish": { summary: "Born with extraordinary superhuman powers, Krishna travels to Singapore and becomes the masked superhero Krrish to stop an evil scientist.", hero: "Hrithik Roshan", director: "Rakesh Roshan", characters: "Krishna Mehra / Krrish, Priya, Dr. Siddhant Arya, Rohit Mehra", streams: ["SonyLIV", "ZEE5", "Amazon Prime Video"] },
+    "War": { summary: "An elite Indian soldier is assigned to track down and eliminate his former mentor after he goes rogue.", hero: "Hrithik Roshan, Tiger Shroff", director: "Siddharth Anand", characters: "Major Kabir Dhaliwal, Captain Khalid Rahmani, Naina", streams: ["Amazon Prime Video"] },
+    "Fast and Furious": { summary: "Undercover cop Brian O'Conner infiltrates the Los Angeles street racing scene and forms a brotherhood with Dominic Toretto.", hero: "Vin Diesel, Paul Walker", director: "Rob Cohen", characters: "Dominic Toretto, Brian O'Conner, Letty Ortiz, Mia Toretto", streams: ["JioCinema", "Amazon Prime Video", "Netflix"] },
+    "Spirit": { summary: "An uncompromising and fierce IPS officer wages a relentless war against a ruthless international crime syndicate.", hero: "Prabhas", director: "Sandeep Reddy Vanga", characters: "IPS Officer (Lead), Syndicate Boss", streams: ["Netflix (Upcoming)"] },
+
+    "The Conjuring": { summary: "Paranormal investigators Ed and Lorraine Warren work to help a family terrorized by a dark demonic presence in their farmhouse.", hero: "Patrick Wilson, Vera Farmiga", director: "James Wan", characters: "Ed Warren, Lorraine Warren, Carolyn Perron, Bathsheba", streams: ["Netflix", "Amazon Prime Video", "JioCinema"] },
+    "Tumbbad": { summary: "A greedy man's decades-long obsession with a hidden ancestral treasure guarded by a cursed entity leads to terrifying consequences.", hero: "Sohum Shah", director: "Rahi Anil Barve", characters: "Vinayak Rao, Hastar, Sarkar, Pandurang", streams: ["Amazon Prime Video"] },
+    "Insidious": { summary: "Parents take drastic measures when their comatose son becomes a vessel for malevolent spirits in an astral realm.", hero: "Patrick Wilson, Rose Byrne", director: "James Wan", characters: "Josh Lambert, Renai Lambert, Elise Rainier, Dalton", streams: ["Netflix", "Amazon Prime Video"] },
+    "A Quiet Place": { summary: "In a post-apocalyptic world, a family must live in complete silence to hide from blind monsters that hunt by sound.", hero: "John Krasinski, Emily Blunt", director: "John Krasinski", characters: "Lee Abbott, Evelyn Abbott, Regan Abbott, Marcus", streams: ["Amazon Prime Video", "Netflix"] },
+    "IT": { summary: "Seven outcast kids in Derry, Maine face their worst nightmares when an ancient, shape-shifting evil emerges as Pennywise the Clown.", hero: "Bill Skarsgård, Jaeden Martell", director: "Andy Muschietti", characters: "Pennywise, Bill Denbrough, Beverly Marsh, Richie Tozier", streams: ["Netflix", "Amazon Prime Video"] },
+    "The Nun": { summary: "A priest with a haunted past and a novice nun investigate the unholy death of a young nun at a cloistered abbey in Romania.", hero: "Demián Bichir, Taissa Farmiga", director: "Corin Hardy", characters: "Father Burke, Sister Irene, Valak (The Nun), Frenchie", streams: ["Netflix", "Amazon Prime Video", "JioCinema"] },
+    "Hereditary": { summary: "When the matriarch of the Graham family passes away, her daughter's family begins to unravel cryptic and terrifying secrets about their ancestry.", hero: "Toni Collette, Alex Wolff", director: "Ari Aster", characters: "Annie Graham, Peter Graham, Charlie Graham, Steve", streams: ["Amazon Prime Video", "Netflix"] },
+    "Smile": { summary: "After witnessing a bizarre, traumatic incident involving a patient, a doctor starts experiencing frightening occurrences she can't explain.", hero: "Sosie Bacon", director: "Parker Finn", characters: "Dr. Rose Cotter, Joel, Laura Weaver", streams: ["Amazon Prime Video", "Netflix"] },
+
+    "Sita Ramam": { summary: "An orphan soldier's life changes forever after he receives a love letter from a mysterious woman named Sita, sparking a timeless romance.", hero: "Dulquer Salmaan, Mrunal Thakur", director: "Hanu Raghavapudi", characters: "Lieutenant Ram, Sita Mahalakshmi, Afreen, Brigadier Vishnu Sharma", streams: ["Amazon Prime Video", "Disney+ Hotstar"] },
+    "96": { summary: "Two high school sweethearts meet at a reunion after 22 years and reminisce about their unspoken love over one nostalgic night.", hero: "Vijay Sethupathi, Trisha Krishnan", director: "C. Prem Kumar", characters: "Ramachandran (Ram), Janaki Devi (Jaanu)", streams: ["Sun NXT", "Amazon Prime Video"] },
+    "Titanic": { summary: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.", hero: "Leonardo DiCaprio, Kate Winslet", director: "James Cameron", characters: "Jack Dawson, Rose DeWitt Bukater, Cal Hockley", streams: ["Disney+ Hotstar"] },
+    "La La Land": { summary: "While navigating their careers in Los Angeles, a jazz pianist and an aspiring actress fall in love while attempting to reconcile their aspirations.", hero: "Ryan Gosling, Emma Stone", director: "Damien Chazelle", characters: "Sebastian Wilder, Mia Dolan, Keith", streams: ["Amazon Prime Video", "Netflix"] },
+    "The Notebook": { summary: "A poor yet passionate young man falls in love with a rich young woman, giving her a sense of freedom before social differences separate them.", hero: "Ryan Gosling, Rachel McAdams", director: "Nick Cassavetes", characters: "Noah Calhoun, Allie Hamilton, Duke", streams: ["Netflix", "Amazon Prime Video"] },
+    "Premam": { summary: "A young man experiences three distinct stages of love across his teenage years, college days, and adulthood.", hero: "Nivin Pauly, Sai Pallavi", director: "Alphonse Puthren", characters: "George David, Malar, Mary, Celine", streams: ["Disney+ Hotstar", "Sun NXT"] },
+    "Aashiqui 2": { summary: "A fading musician helps a young singer find fame, even as age, alcoholism, and insecurities threaten to tear their passionate love apart.", hero: "Aditya Roy Kapur, Shraddha Kapoor", director: "Mohit Suri", characters: "Rahul Jaykar, Aarohi Keshav Shirke, Vivek", streams: ["Amazon Prime Video", "JioCinema"] },
+    "The Fault in Our Stars": { summary: "Two teenage cancer patients begin a life-affirming journey to visit a reclusive author in Amsterdam after falling deeply in love.", hero: "Shailene Woodley, Ansel Elgort", director: "Josh Boone", characters: "Hazel Grace Lancaster, Augustus Waters, Peter Van Houten", streams: ["Disney+ Hotstar"] },
+
+    "Drishyam": { summary: "Desperate measures are taken by a clever cable operator to save his family from the dark side of the law after an unexpected crime.", hero: "Ajay Devgn / Mohanlal / Venkatesh", director: "Nishikant Kamat / Jeethu Joseph", characters: "Vijay Salgaonkar (Georgekutty), Nandini, IG Meera Deshmukh", streams: ["Disney+ Hotstar", "Amazon Prime Video", "JioCinema"] },
+    "Andhadhun": { summary: "A series of mysterious events change the life of a blind pianist who must now report a murder that he never actually witnessed.", hero: "Ayushmann Khurrana, Tabu", director: "Sriram Raghavan", characters: "Akash, Simi, Sophie, Pramod Sinha", streams: ["Netflix", "JioCinema"] },
+    "Shutter Island": { summary: "In 1954, a U.S. Marshal investigates the disappearance of a murderer who escaped from a hospital for the criminally insane.", hero: "Leonardo DiCaprio, Mark Ruffalo", director: "Martin Scorsese", characters: "Teddy Daniels, Chuck Aule, Dr. John Cawley", streams: ["Amazon Prime Video", "Netflix"] },
+    "Se7en": { summary: "Two detectives, a rookie and a veteran, hunt a serial killer who uses the seven deadly sins as his twisted motives.", hero: "Brad Pitt, Morgan Freeman", director: "David Fincher", characters: "Detective David Mills, Detective William Somerset, John Doe", streams: ["Amazon Prime Video", "Netflix"] },
+    "Gone Girl": { summary: "With his wife's disappearance having become the focus of an intense media circus, a man sees the spotlight turned on him when he is suspected.", hero: "Ben Affleck, Rosamund Pike", director: "David Fincher", characters: "Nick Dunne, Amy Elliott Dunne, Margo Dunne", streams: ["Disney+ Hotstar", "Amazon Prime Video"] },
+    "Prisoners": { summary: "When Keller Dover's daughter and her friend go missing, he takes matters into his own hands as the police pursue multiple leads.", hero: "Hugh Jackman, Jake Gyllenhaal", director: "Denis Villeneuve", characters: "Keller Dover, Detective Loki, Alex Jones", streams: ["Netflix", "Amazon Prime Video"] },
+    "Inception": { summary: "A skilled thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea into a CEO's mind.", hero: "Leonardo DiCaprio", director: "Christopher Nolan", characters: "Dom Cobb, Arthur, Ariadne, Eames, Mal", streams: ["Amazon Prime Video", "JioCinema"] },
+    "Interstellar": { summary: "When Earth becomes uninhabitable, a team of explorers travels through a wormhole in space in a high-stakes race to ensure humanity's survival.", hero: "Matthew McConaughey", director: "Christopher Nolan", characters: "Joseph Cooper, Amelia Brand, Murph, TARS", streams: ["Amazon Prime Video", "Netflix"] }
+};
+
+function getDetailsForTitle(title) {
+    return contentDetailsDB[title] || {
+        summary: `${title} is one of the best movies in this category.`,
+        hero: "Lead Cast",
+        director: "Acclaimed Director",
+        characters: "Main Characters",
+        streams: ["Netflix", "Amazon Prime Video", "Disney+ Hotstar"]
+    };
+}
+
+function buildCategoryData(titleData) {
+    const res = {};
+    categories.forEach(c => res[c] = []);
+    Object.entries(titleData).forEach(([t, cs]) => {
+        cs.forEach(c => { if (res[c]) res[c].push(t); });
+    });
+    return res;
+}
+
+const data = buildCategoryData(movieTitles);
+let currentCategory = "All";
+
+function initCategories() {
+    const grid = document.getElementById("categoryGrid");
+    grid.innerHTML = "";
+    ["All Movies", ...categories].forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "category-card";
+        btn.innerText = cat;
+        btn.onclick = () => openCategory(cat === "All Movies" ? "All" : cat);
+        grid.appendChild(btn);
+    });
+}
+
+function openCategory(cat) {
+    currentCategory = cat;
+    document.getElementById("categoryPage").style.display = "none";
+    document.getElementById("contentPage").style.display = "block";
+    document.getElementById("contentTitle").innerText = cat === "All" ? "All Movies" : "Movies - " + cat;
+    document.getElementById("searchInput").value = "";
+    createCategoryButtons();
+    displayContent();
+    window.scrollTo(0, 0);
+}
+
+function goCategories() {
+    document.getElementById("contentPage").style.display = "none";
+    document.getElementById("categoryPage").style.display = "block";
+    window.scrollTo(0, 0);
+}
+
+function createCategoryButtons() {
+    const buttons = document.getElementById("categoryButtons");
+    buttons.innerHTML = "";
+    ["All", ...categories].forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "filter-btn " + (cat === currentCategory ? "active" : "");
+        btn.innerText = cat === "All" ? "All" : cat;
+        btn.onclick = () => {
+            currentCategory = cat;
+            document.getElementById("contentTitle").innerText = cat === "All" ? "All Movies" : "Movies - " + cat;
+            createCategoryButtons();
+            displayContent(document.getElementById("searchInput").value);
+        };
+        buttons.appendChild(btn);
+    });
+}
+
+function getImageFromBody(title) {
+    const imgs = document.querySelectorAll(".image-library img");
+    for (let img of imgs) {
+        if (img.dataset.title && img.dataset.title.toLowerCase() === title.toLowerCase()) return img.src;
+    }
+    return document.querySelector('.image-library img[data-title="default"]').src;
+}
+
+function displayContent(searchText = "") {
+    const grid = document.getElementById("contentGrid");
+    const noResults = document.getElementById("noResults");
+    grid.innerHTML = "";
+
+    let titles = [];
+    if (currentCategory === "All") {
+        titles = Object.keys(movieTitles);
+    } else {
+        titles = data[currentCategory] || [];
+    }
+
+    const filtered = titles.filter(t => t.toLowerCase().includes(searchText.toLowerCase()));
+    noResults.style.display = filtered.length === 0 ? "block" : "none";
+
+    filtered.forEach(title => {
+        const card = document.createElement("div");
+        card.className = "content-card";
+        const contentCats = movieTitles[title] || [];
+        card.onclick = () => openModal(title, contentCats);
+
+        const poster = document.createElement("div");
+        poster.className = "poster";
+        const img = document.createElement("img");
+        img.src = getImageFromBody(title);
+        img.alt = title;
+        img.onerror = function() {
+            this.onerror = null;
+            this.src = document.querySelector('.image-library img[data-title="default"]').src;
+        };
+        poster.appendChild(img);
+
+        const details = document.createElement("div");
+        details.className = "details";
+        details.innerHTML = `
+            <h2 class="title">${title}</h2>
+            <div class="rating"><span class="stars">★★★★★</span> Must Watch</div>
+            <div class="tags">${contentCats.map(c => `<span class="tag">${c}</span>`).join("")}</div>
+            <div class="languages"><strong>Languages:</strong> English, Hindi, Telugu</div>
+            <div class="click-hint">View Details & Streaming →</div>
+        `;
+        card.appendChild(poster);
+        card.appendChild(details);
+        grid.appendChild(card);
+    });
+}
+
+function searchContent() {
+    displayContent(document.getElementById("searchInput").value);
+}
+
+function openModal(title, cats) {
+    const info = getDetailsForTitle(title);
+    const posterImg = document.getElementById("modalPosterImg");
+    posterImg.src = getImageFromBody(title);
+    posterImg.onerror = function() {
+        this.onerror = null;
+        this.src = document.querySelector('.image-library img[data-title="default"]').src;
+    };
+
+    document.getElementById("modalTitle").innerText = title;
+    document.getElementById("modalTags").innerHTML = cats.map(c => `<span class="tag">${c}</span>`).join("");
+    document.getElementById("modalSummary").innerText = info.summary;
+    document.getElementById("modalHero").innerText = info.hero;
+    document.getElementById("modalDirector").innerText = info.director;
+    document.getElementById("modalCharacters").innerText = info.characters;
+    document.getElementById("modalStreams").innerHTML = info.streams.map(s => `<span class="stream-badge">${s}</span>`).join("");
+    document.getElementById("detailModal").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function closeModal() {
+    document.getElementById("detailModal").classList.remove("active");
+    document.body.style.overflow = "auto";
+}
+
+function closeModalOnOutside(e) {
+    if (e.target.id === "detailModal") closeModal();
+}
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") closeModal();
+});
+
+initCategories();
+</script>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Series - Explore Entertainment</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --background: #08090d;
+    --card: #151820;
+    --border: #292e3a;
+    --text: #ffffff;
+    --muted: #a3a8b5;
+    --accent: #ff5733;
+}
+body {
+    font-family: Arial, sans-serif;
+    background: var(--background);
+    color: var(--text);
+    min-height: 100vh;
+}
+.container { width: 92%; max-width: 1400px; margin: auto; }
+.image-library { display: none; }
+.page { min-height: 100vh; padding: 35px 0 70px; }
+.back-btn {
+    padding: 12px 20px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; color: white; cursor: pointer; margin-bottom: 30px; text-decoration: none; display: inline-block;
+}
+.back-btn:hover { border-color: var(--accent); }
+.page-title { font-size: clamp(30px, 4vw, 45px); text-align: center; margin-bottom: 12px; }
+.page-subtitle { color: var(--muted); text-align: center; margin-bottom: 30px; }
+
+/* 3 items in row 1, 2 items in row 2 */
+.category-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 20px; 
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.category-card {
+    min-height: 130px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 18px; color: white; font-size: 20px; font-weight: bold; cursor: pointer; transition: .3s;
+}
+.category-card:hover { border-color: var(--accent); transform: translateY(-5px); }
+
+.content-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 30px; }
+.category-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.filter-btn { padding: 11px 20px; background: #20242d; color: white; border: 1px solid #303642; border-radius: 25px; cursor: pointer; }
+.filter-btn:hover { border-color: var(--accent); }
+.filter-btn.active { background: var(--accent); border-color: var(--accent); }
+.search-box { width: 300px; flex-shrink: 0; }
+.search-box input { width: 100%; padding: 13px 18px; background: #151820; border: 1px solid #303642; border-radius: 25px; outline: none; color: white; }
+
+/* 3 Web Series per row */
+.content-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+
+.content-card { overflow: hidden; background: var(--card); border: 1px solid var(--border); border-radius: 18px; transition: .3s; cursor: pointer; }
+.content-card:hover { transform: translateY(-6px); border-color: var(--accent); }
+.poster { width: 100%; height: 320px; overflow: hidden; background: #202b40; }
+.poster img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s ease; }
+.content-card:hover .poster img { transform: scale(1.05); }
+.details { padding: 20px; }
+.title { font-size: 22px; margin-bottom: 10px; }
+.rating { margin-bottom: 12px; font-size: 14px; }
+.stars { color: #ffc107; letter-spacing: 2px; margin-right: 6px; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.tag { background: #252b36; padding: 6px 12px; border-radius: 20px; font-size: 12px; }
+.languages { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.click-hint { margin-top: 12px; font-size: 13px; color: var(--accent); font-weight: bold; }
+.no-results { display: none; text-align: center; color: var(--muted); padding: 60px 20px; }
+
+/* Modal Styles */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.modal-overlay.active { display: flex; }
+.modal-box { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 900px; width: 100%; overflow: hidden; position: relative; display: grid; grid-template-columns: 320px 1fr; }
+.modal-close { position: absolute; top: 16px; right: 16px; width: 38px; height: 38px; border-radius: 50%; background: #20242d; border: 1px solid #303642; color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+.modal-close:hover { background: var(--accent); border-color: var(--accent); }
+.modal-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.modal-info { padding: 32px; display: flex; flex-direction: column; gap: 16px; }
+.modal-title { font-size: 28px; color: var(--text); padding-right: 30px; }
+.modal-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.modal-summary { color: #d1d5db; font-size: 15px; line-height: 1.65; background: #10131a; padding: 15px; border-radius: 12px; border: 1px solid #232733; }
+.modal-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.meta-item { background: #1b1f29; padding: 12px 15px; border-radius: 12px; border: 1px solid #292e3a; }
+.meta-item.full-width { grid-column: 1 / -1; }
+.meta-label { font-size: 12px; text-transform: uppercase; color: var(--accent); font-weight: bold; margin-bottom: 5px; }
+.meta-value { font-size: 15px; color: #ffffff; }
+.stream-badge { display: inline-block; background: rgba(255, 87, 51, 0.15); border: 1px solid var(--accent); color: #ff856b; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-right: 8px; margin-top: 4px; }
+
+@media(max-width: 1024px) {
+    .content-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width: 768px) {
+    .category-grid { grid-template-columns: repeat(2, 1fr); }
+    .content-toolbar { flex-direction: column; align-items: stretch; }
+    .search-box { width: 100%; }
+    .modal-box { grid-template-columns: 1fr; max-height: 90vh; overflow-y: auto; }
+    .modal-poster { height: 260px; }
+}
+@media(max-width: 500px) {
+    .category-grid, .content-grid { grid-template-columns: 1fr; }
+    .modal-meta-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="image-library">
+    <!-- ACTION WEB SERIES -->
+    <img src="The Boys.jpg" data-title="The Boys" alt="The Boys">
+    <img src="Daredevil.jpg" data-title="Daredevil" alt="Daredevil">
+    <img src="The Mandalorian.jpg" data-title="The Mandalorian" alt="The Mandalorian">
+    <img src="Warrior.jpg" data-title="Warrior" alt="Warrior">
+    <img src="Reacher.avif" data-title="Reacher" alt="Reacher">
+    <img src="The Witcher.jpg" data-title="The Witcher" alt="The Witcher">
+    <img src="Vikings.jpg" data-title="Vikings" alt="Vikings">
+    <img src="The Punisher.jpg" data-title="The Punisher" alt="The Punisher">
+
+    <!-- HORROR WEB SERIES -->
+    <img src="From.jpg" data-title="From" alt="From">
+    <img src="Stranger Things.jpg" data-title="Stranger Things" alt="Stranger Things">
+    <img src="Wednesday.jpg" data-title="Wednesday" alt="Wednesday">
+    <img src="The Haunting of Hill House.jpg" data-title="The Haunting of Hill House" alt="The Haunting of Hill House">
+    <img src="The Haunting of Bly Manor.jpg" data-title="The Haunting of Bly Manor" alt="The Haunting of Bly Manor">
+    <img src="The Walking Dead.jpg" data-title="The Walking Dead" alt="The Walking Dead">
+    <img src="The Fall of the House of Usher.jpg" data-title="The Fall of the House of Usher" alt="The Fall of the House of Usher">
+    <img src="The Last of Us.jpg" data-title="The Last of Us" alt="The Last of Us">
+
+    <!-- ROMANCE WEB SERIES -->
+    <img src="Bridgerton.jpg" data-title="Bridgerton" alt="Bridgerton">
+    <img src="The Summer I Turned Pretty.jpg" data-title="The Summer I Turned Pretty" alt="The Summer I Turned Pretty">
+    <img src="Normal People.jpg" data-title="Normal People" alt="Normal People">
+    <img src="Heartstopper.jpg" data-title="Heartstopper" alt="Heartstopper">
+    <img src="Never Have I Ever.jpg" data-title="Never Have I Ever" alt="Never Have I Ever">
+    <img src="Emily in Paris.jpg" data-title="Emily in Paris" alt="Emily in Paris">
+    <img src="One Day.jpg" data-title="One Day" alt="One Day">
+    <img src="Outlander.jpg" data-title="Outlander" alt="Outlander">
+
+    <!-- THRILLER WEB SERIES -->
+    <img src="Breaking Bad.jpg" data-title="Breaking Bad" alt="Breaking Bad">
+    <img src="Money Heist.jpg" data-title="Money Heist" alt="Money Heist">
+    <img src="Sherlock.jpg" data-title="Sherlock" alt="Sherlock">
+    <img src="You.jpg" data-title="You" alt="You">
+    <img src="Mindhunter.jpg" data-title="Mindhunter" alt="Mindhunter">
+    <img src="Ozark.jpg" data-title="Ozark" alt="Ozark">
+    <img src="Prison Break.jpg" data-title="Prison Break" alt="Prison Break">
+    <img src="Dark.jpg" data-title="Dark" alt="Dark">
+
+    <!-- DEFAULT POSTER -->
+    <img src="default.jpg" data-title="default" alt="Default">
+</div>
+
+<div class="container">
+    <!-- Category Selection View -->
+    <section id="categoryPage" class="page">
+        <a href="index.html" class="back-btn">← Back to Home</a>
+        <h1 class="page-title">Web Series Categories</h1>
+        <p class="page-subtitle">Choose a category</p>
+        <div class="category-grid" id="categoryGrid"></div>
+    </section>
+
+    <!-- Content Grid View -->
+    <section id="contentPage" class="page" style="display: none;">
+        <button class="back-btn" onclick="goCategories()">← Back to Categories</button>
+        <h1 class="page-title" id="contentTitle">Web Series</h1>
+        <p class="page-subtitle">Click on any card to view full details, characters & streaming platforms</p>
+
+        <div class="content-toolbar">
+            <div class="category-buttons" id="categoryButtons"></div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search web series..." oninput="searchContent()">
+            </div>
+        </div>
+
+        <div class="content-grid" id="contentGrid"></div>
+        <div class="no-results" id="noResults">No web series found.</div>
+    </section>
+</div>
+
+<!-- Modal Popup -->
+<div class="modal-overlay" id="detailModal" onclick="closeModalOnOutside(event)">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div class="modal-poster"><img id="modalPosterImg" src="" alt="Poster"></div>
+        <div class="modal-info">
+            <h2 class="modal-title" id="modalTitle"></h2>
+            <div class="modal-tags" id="modalTags"></div>
+            <div class="modal-summary" id="modalSummary"></div>
+            <div class="modal-meta-grid">
+                <div class="meta-item"><div class="meta-label">Lead Cast</div><div class="meta-value" id="modalHero"></div></div>
+                <div class="meta-item"><div class="meta-label">Creator / Showrunner</div><div class="meta-value" id="modalDirector"></div></div>
+                <div class="meta-item full-width"><div class="meta-label">Main Characters</div><div class="meta-value" id="modalCharacters"></div></div>
+                <div class="meta-item full-width"><div class="meta-label">Streaming Platforms</div><div class="meta-value" id="modalStreams"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const categories = ["Action", "Horror", "Romance", "Thriller"];
+
+const webSeriesTitles = {
+    // 8 Action Web Series
+    "The Boys": ["Action"],
+    "Daredevil": ["Action"],
+    "The Mandalorian": ["Action"],
+    "Warrior": ["Action"],
+    "Reacher": ["Action"],
+    "The Witcher": ["Action"],
+    "Vikings": ["Action"],
+    "The Punisher": ["Action"],
+
+    // 8 Horror Web Series
+    "From": ["Horror", "Thriller"],
+    "Stranger Things": ["Horror", "Science Fiction"],
+    "Wednesday": ["Horror", "Comedy"],
+    "The Haunting of Hill House": ["Horror"],
+    "The Haunting of Bly Manor": ["Horror"],
+    "The Walking Dead": ["Horror", "Action"],
+    "The Fall of the House of Usher": ["Horror"],
+    "The Last of Us": ["Horror", "Thriller"],
+
+    // 8 Romance Web Series
+    "Bridgerton": ["Romance"],
+    "The Summer I Turned Pretty": ["Romance"],
+    "Normal People": ["Romance"],
+    "Heartstopper": ["Romance"],
+    "Never Have I Ever": ["Romance", "Comedy"],
+    "Emily in Paris": ["Romance", "Comedy"],
+    "One Day": ["Romance"],
+    "Outlander": ["Romance"],
+
+    // 8 Thriller Web Series
+    "Breaking Bad": ["Thriller", "Emotions"],
+    "Money Heist": ["Thriller"],
+    "Sherlock": ["Thriller"],
+    "You": ["Thriller"],
+    "Mindhunter": ["Thriller"],
+    "Ozark": ["Thriller"],
+    "Prison Break": ["Thriller"],
+    "Dark": ["Thriller", "Science Fiction"]
+};
+
+const contentDetailsDB = {
+    "The Boys": { summary: "Vigilantes set out to take down corrupt superheroes who abuse their superpowers rather than use them for good.", hero: "Karl Urban, Jack Quaid", director: "Eric Kripke", characters: "Billy Butcher, Hughie Campbell, Homelander, Starlight", streams: ["Amazon Prime Video"] },
+    "Daredevil": { summary: "A blind lawyer by day fights crime as a vigilante at night in Hell's Kitchen.", hero: "Charlie Cox", director: "Drew Goddard", characters: "Matt Murdock, Karen Page, Foggy Nelson, Wilson Fisk", streams: ["Disney+ Hotstar"] },
+    "The Mandalorian": { summary: "A lone gunfighter makes his way through the outer reaches of the galaxy, far from the authority of the New Republic.", hero: "Pedro Pascal", director: "Jon Favreau", characters: "Din Djarin (Mandalorian), Grogu (Baby Yoda), Greef Karga", streams: ["Disney+ Hotstar"] },
+    "Warrior": { summary: "Set during the Tong Wars in late 19th-century San Francisco, a martial arts prodigy arrives from China and becomes a hatchet man for a powerful tong.", hero: "Andrew Koji", director: "Jonathan Tropper", characters: "Ah Sahm, Mai Ling, Young Jun, Big Bill O'Hara", streams: ["Netflix", "JioCinema"] },
+    "Reacher": { summary: "A veteran military police investigator enters civilian life only to be falsely accused of murder and dragged into a conspiracy.", hero: "Alan Ritchson", director: "Nick Santora", characters: "Jack Reacher, Frances Neagley, Oscar Finley", streams: ["Amazon Prime Video"] },
+    "The Witcher": { summary: "Geralt of Rivia, a solitary monster hunter, struggles to find his place in a world where people often prove more wicked than beasts.", hero: "Henry Cavill", director: "Lauren Schmidt Hissrich", characters: "Geralt of Rivia, Yennefer, Princess Ciri, Jaskier", streams: ["Netflix"] },
+    "Vikings": { summary: "The legendary saga of Viking hero Ragnar Lothbrok's quest to raid distant lands and expand the Norse empire.", hero: "Travis Fimmel", director: "Michael Hirst", characters: "Ragnar Lothbrok, Lagertha, Floki, Rollo, Bjorn Ironside", streams: ["Amazon Prime Video", "Netflix"] },
+    "The Punisher": { summary: "A former marine out to punish the criminals responsible for the murder of his family finds himself trapped in a military conspiracy.", hero: "Jon Bernthal", director: "Steve Lightfoot", characters: "Frank Castle (Punisher), Billy Russo, Dinah Madani, Micro", streams: ["Disney+ Hotstar"] },
+
+    "From": { summary: "Unravel the mystery of a nightmare town in middle America that traps everyone who enters, while surrounding monsters hunt at night.", hero: "Harold Perrineau", director: "John Griffin", characters: "Boyd Stevens, Tabitha Matthews, Jim Matthews, Jade Herrera", streams: ["Amazon Prime Video"] },
+    "Stranger Things": { summary: "When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and a strange girl.", hero: "Millie Bobby Brown, Finn Wolfhard", director: "The Duffer Brothers", characters: "Eleven, Mike Wheeler, Jim Hopper, Dustin, Vecna", streams: ["Netflix"] },
+    "Wednesday": { summary: "Wednesday Addams attempts to master her emerging psychic ability, thwart a killing spree, and solve a supernatural mystery at Nevermore Academy.", hero: "Jenna Ortega", director: "Tim Burton / Alfred Gough", characters: "Wednesday Addams, Thing, Enid Sinclair, Morticia Addams", streams: ["Netflix"] },
+    "The Haunting of Hill House": { summary: "Flawed siblings recall haunting memories of the old mansion they grew up in and the terrifying events that drove them away.", hero: "Michiel Huisman, Carla Gugino", director: "Mike Flanagan", characters: "Steven Crain, Shirley Crain, Nell Crain, Hugh Crain", streams: ["Netflix"] },
+    "The Haunting of Bly Manor": { summary: "A young American au pair hired to care for two children at a historic estate begins to see eerie apparitions on the grounds.", hero: "Victoria Pedretti", director: "Mike Flanagan", characters: "Dani Clayton, Miles Wingrave, Flora Wingrave, Peter Quint", streams: ["Netflix"] },
+    "The Walking Dead": { summary: "Sheriff's deputy Rick Grimes wakes up from a coma to find a world overrun by the zombie apocalypse and leads survivors to stay alive.", hero: "Andrew Lincoln, Norman Reedus", director: "Frank Darabont", characters: "Rick Grimes, Daryl Dixon, Carol Peletier, Negan", streams: ["Netflix", "Amazon Prime Video", "Disney+ Hotstar"] },
+    "The Fall of the House of Usher": { summary: "Ruthless siblings running a pharmaceutical empire face their past when their heirs begin dying in mysterious and gruesome ways.", hero: "Bruce Greenwood, Carla Gugino", director: "Mike Flanagan", characters: "Roderick Usher, Madeline Usher, Verna", streams: ["Netflix"] },
+    "The Last of Us": { summary: "In a post-pandemic world, a hardened survivor is tasked with smuggling a resilient 14-year-old girl across the United States.", hero: "Pedro Pascal, Bella Ramsey", director: "Craig Mazin & Neil Druckmann", characters: "Joel Miller, Ellie Williams, Tess, Tommy", streams: ["Disney+ Hotstar"] },
+
+    "Bridgerton": { summary: "The eight close-knit siblings of the Bridgerton family look for love and happiness in London high society during the Regency era.", hero: "Phoebe Dynevor, Regé-Jean Page", director: "Chris Van Dusen", characters: "Daphne Bridgerton, Simon Bassett, Anthony Bridgerton, Penelope", streams: ["Netflix"] },
+    "The Summer I Turned Pretty": { summary: "A annual summer vacation turns into a love triangle between a teenage girl and two lifelong childhood friends.", hero: "Lola Tung, Christopher Briney", director: "Jenny Han", characters: "Belly Conklin, Conrad Fisher, Jeremiah Fisher", streams: ["Amazon Prime Video"] },
+    "Normal People": { summary: "Follows the tender yet complicated relationship of Marianne and Connell as they grow from school days into college years in Ireland.", hero: "Daisy Edgar-Jones, Paul Mescal", director: "Lenny Abrahamson", characters: "Marianne Sheridan, Connell Waldron", streams: ["Lionsgate Play", "Amazon Prime Video"] },
+    "Heartstopper": { summary: "Teens Charlie and Nick discover their unlikely friendship might be something more as they navigate school and young love.", hero: "Joe Locke, Kit Connor", director: "Euros Lyn", characters: "Charlie Spring, Nick Nelson, Tao Xu, Elle Argent", streams: ["Netflix"] },
+    "Never Have I Ever": { summary: "The complicated life of a modern-day high school Indian-American girl who wants to improve her social standing at school.", hero: "Maitreyi Ramakrishnan", director: "Mindy Kaling & Lang Fisher", characters: "Devi Vishwakumar, Paxton Hall-Yoshida, Ben Gross", streams: ["Netflix"] },
+    "Emily in Paris": { summary: "An ambitious American marketing executive lands her dream job in Paris, juggling career, new friendships, and romantic misadventures.", hero: "Lily Collins", director: "Darren Star", characters: "Emily Cooper, Gabriel, Sylvie Grateau, Mindy Chen", streams: ["Netflix"] },
+    "One Day": { summary: "Emma and Dexter talk on the night of their graduation and walk different paths, but their lives remain intertwined over two decades.", hero: "Ambika Mod, Leo Woodall", director: "Nicole Taylor", characters: "Emma Morley, Dexter Mayhew", streams: ["Netflix"] },
+    "Outlander": { summary: "A married combat nurse from 1945 is mysteriously swept back in time to 1743 Scotland, where she falls in love with a dashing Highland warrior.", hero: "Caitríona Balfe, Sam Heughan", director: "Ronald D. Moore", characters: "Claire Randall, Jamie Fraser, Frank Randall, Black Jack Randall", streams: ["Netflix", "Amazon Prime Video"] },
+
+    "Breaking Bad": { summary: "A chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine with a former student.", hero: "Bryan Cranston, Aaron Paul", director: "Vince Gilligan", characters: "Walter White (Heisenberg), Jesse Pinkman, Saul Goodman, Gus Fring", streams: ["Netflix"] },
+    "Money Heist": { summary: "An enigmatic criminal mastermind known as 'The Professor' recruits a group of desperate thieves to pull off the ultimate bank heist in Spain.", hero: "Álvaro Morte, Úrsula Corberó", director: "Álex Pina", characters: "The Professor, Tokyo, Berlin, Nairobi, Rio, Denver", streams: ["Netflix"] },
+    "Sherlock": { summary: "A quirky modern-day spin on Sir Arthur Conan Doyle's iconic consulting detective solving crimes in London with Dr. John Watson.", hero: "Benedict Cumberbatch, Martin Freeman", director: "Mark Gatiss & Steven Moffat", characters: "Sherlock Holmes, Dr. John Watson, Jim Moriarty, Mycroft Holmes", streams: ["Netflix", "Amazon Prime Video"] },
+    "You": { summary: "A dangerously charming, intensely obsessive young man goes to extreme measures to insert himself into the lives of those he falls for.", hero: "Penn Badgley", director: "Greg Berlanti & Sera Gamble", characters: "Joe Goldberg, Love Quinn, Guinevere Beck, Marienne", streams: ["Netflix"] },
+    "Mindhunter": { summary: "In the late 1970s, two FBI agents expand criminal science by delving into the psychology of murder and getting uncomfortably close to real killers.", hero: "Jonathan Groff, Holt McCallany", director: "David Fincher", characters: "Holden Ford, Bill Tench, Dr. Wendy Carr", streams: ["Netflix"] },
+    "Ozark": { summary: "A financial advisor drags his family from Chicago to the Missouri Ozarks, where he must launder money to appease a Mexican drug cartel.", hero: "Jason Bateman, Laura Linney", director: "Bill Dubuque", characters: "Marty Byrde, Wendy Byrde, Ruth Langmore, Charlotte", streams: ["Netflix"] },
+    "Prison Break": { summary: "An engineer installs himself in a maximum-security prison to execute an elaborate plan to free his falsely accused brother from death row.", hero: "Wentworth Miller, Dominic Purcell", director: "Paul Scheuring", characters: "Michael Scofield, Lincoln Burrows, Sara Tancredi, T-Bag", streams: ["Disney+ Hotstar", "Netflix"] },
+    "Dark": { summary: "A family saga with a supernatural twist set in a German town, where the disappearance of a child exposes secrets across multiple generations.", hero: "Louis Hofmann", director: "Baran bo Odar & Jantje Friese", characters: "Jonas Kahnwald, Martha Nielsen, Ulrich Nielsen, Claudia", streams: ["Netflix"] }
+};
+
+function getDetailsForTitle(title) {
+    return contentDetailsDB[title] || {
+        summary: `${title} is a top-rated thrilling web series.`,
+        hero: "Lead Cast",
+        director: "Showrunner",
+        characters: "Main Characters",
+        streams: ["Netflix", "Amazon Prime Video", "Disney+ Hotstar"]
+    };
+}
+
+function buildCategoryData(titleData) {
+    const res = {};
+    categories.forEach(c => res[c] = []);
+    Object.entries(titleData).forEach(([t, cs]) => {
+        cs.forEach(c => { if (res[c]) res[c].push(t); });
+    });
+    return res;
+}
+
+const data = buildCategoryData(webSeriesTitles);
+let currentCategory = "All";
+
+function initCategories() {
+    const grid = document.getElementById("categoryGrid");
+    grid.innerHTML = "";
+    ["All Web Series", ...categories].forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "category-card";
+        btn.innerText = cat;
+        btn.onclick = () => openCategory(cat === "All Web Series" ? "All" : cat);
+        grid.appendChild(btn);
+    });
+}
+
+function openCategory(cat) {
+    currentCategory = cat;
+    document.getElementById("categoryPage").style.display = "none";
+    document.getElementById("contentPage").style.display = "block";
+    document.getElementById("contentTitle").innerText = cat === "All" ? "All Web Series" : "Web Series - " + cat;
+    document.getElementById("searchInput").value = "";
+    createCategoryButtons();
+    displayContent();
+    window.scrollTo(0, 0);
+}
+
+function goCategories() {
+    document.getElementById("contentPage").style.display = "none";
+    document.getElementById("categoryPage").style.display = "block";
+    window.scrollTo(0, 0);
+}
+
+function createCategoryButtons() {
+    const buttons = document.getElementById("categoryButtons");
+    buttons.innerHTML = "";
+    ["All", ...categories].forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "filter-btn " + (cat === currentCategory ? "active" : "");
+        btn.innerText = cat === "All" ? "All" : cat;
+        btn.onclick = () => {
+            currentCategory = cat;
+            document.getElementById("contentTitle").innerText = cat === "All" ? "All Web Series" : "Web Series - " + cat;
+            createCategoryButtons();
+            displayContent(document.getElementById("searchInput").value);
+        };
+        buttons.appendChild(btn);
+    });
+}
+
+function getImageFromBody(title) {
+    const imgs = document.querySelectorAll(".image-library img");
+    for (let img of imgs) {
+        if (img.dataset.title && img.dataset.title.toLowerCase() === title.toLowerCase()) return img.src;
+    }
+    return document.querySelector('.image-library img[data-title="default"]').src;
+}
+
+function displayContent(searchText = "") {
+    const grid = document.getElementById("contentGrid");
+    const noResults = document.getElementById("noResults");
+    grid.innerHTML = "";
+
+    let titles = [];
+    if (currentCategory === "All") {
+        titles = Object.keys(webSeriesTitles);
+    } else {
+        titles = data[currentCategory] || [];
+    }
+
+    const filtered = titles.filter(t => t.toLowerCase().includes(searchText.toLowerCase()));
+    noResults.style.display = filtered.length === 0 ? "block" : "none";
+
+    filtered.forEach(title => {
+        const card = document.createElement("div");
+        card.className = "content-card";
+        const contentCats = webSeriesTitles[title] || [];
+        card.onclick = () => openModal(title, contentCats);
+
+        const poster = document.createElement("div");
+        poster.className = "poster";
+        const img = document.createElement("img");
+        img.src = getImageFromBody(title);
+        img.alt = title;
+        img.onerror = function() {
+            this.onerror = null;
+            this.src = document.querySelector('.image-library img[data-title="default"]').src;
+        };
+        poster.appendChild(img);
+
+        const details = document.createElement("div");
+        details.className = "details";
+        details.innerHTML = `
+            <h2 class="title">${title}</h2>
+            <div class="rating"><span class="stars">★★★★★</span> Must Watch</div>
+            <div class="tags">${contentCats.map(c => `<span class="tag">${c}</span>`).join("")}</div>
+            <div class="languages"><strong>Languages:</strong> English, Hindi, Telugu</div>
+            <div class="click-hint">View Details & Streaming →</div>
+        `;
+        card.appendChild(poster);
+        card.appendChild(details);
+        grid.appendChild(card);
+    });
+}
+
+function searchContent() {
+    displayContent(document.getElementById("searchInput").value);
+}
+
+function openModal(title, cats) {
+    const info = getDetailsForTitle(title);
+    const posterImg = document.getElementById("modalPosterImg");
+    posterImg.src = getImageFromBody(title);
+    posterImg.onerror = function() {
+        this.onerror = null;
+        this.src = document.querySelector('.image-library img[data-title="default"]').src;
+    };
+
+    document.getElementById("modalTitle").innerText = title;
+    document.getElementById("modalTags").innerHTML = cats.map(c => `<span class="tag">${c}</span>`).join("");
+    document.getElementById("modalSummary").innerText = info.summary;
+    document.getElementById("modalHero").innerText = info.hero;
+    document.getElementById("modalDirector").innerText = info.director;
+    document.getElementById("modalCharacters").innerText = info.characters;
+    document.getElementById("modalStreams").innerHTML = info.streams.map(s => `<span class="stream-badge">${s}</span>`).join("");
+    document.getElementById("detailModal").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function closeModal() {
+    document.getElementById("detailModal").classList.remove("active");
+    document.body.style.overflow = "auto";
+}
+
+function closeModalOnOutside(e) {
+    if (e.target.id === "detailModal") closeModal();
+}
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") closeModal();
+});
+
+initCategories();
+</script>
+</body>
+</html>
